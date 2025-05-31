@@ -30,6 +30,9 @@ function users(page) {
         if(result.status === 200) {
             // Comienza a construir la tabla HTML para mostrar los usuarios
             let listUsers = `
+                <button type="button" class="btn btn-outline-secondary" onclick="addUser()">
+                <i class="fa-solid fa-user-plus"></i>
+                </button>
                 <table class="table">
                     <thead>
                         <tr>
@@ -52,7 +55,7 @@ function users(page) {
                         <td>${user.last_name}</td>
                         <td><img src="${user.avatar}" class="img-thumbnail" alt="avatar del usuario"></td>
                         <td>
-                            <button type="button" class="btn btn-outline-info" onclick="getUser('${user.id}')">Ver</button>
+                            <button type="button" class="btn btn-outline-info" onclick="getUser('${user.id}')"><i class="fa-solid fa-eye"></i></button>
                         </td>
                     </tr>
                 `  
@@ -166,4 +169,120 @@ function showModalUser(user) {
     // Crea una instancia del modal y lo muestra
     const modal = new bootstrap.Modal(document.getElementById('showModalUser'))
     modal.show()
+}
+
+function addUser() {
+    // Construye el HTML del modal con los datos del usuario
+    const modalUser = `
+    <!-- Modal -->
+    <div class="modal fade" id="showModalUser" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-md">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h1 class="modal-title fs-5" id="exampleModalLabel">Agregar Usuario</h1>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="card">
+                        <form id="formAddUser">
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col">
+                                        <input type="text" class="form-control" placeholder="Primer Nombre" aria-label="First name" id="first_name">
+                                    </div>
+                                    <div class="col">
+                                        <input type="text" class="form-control" placeholder="Apellido" aria-label="Last name" id="last_name">
+                                    </div>
+                                </div>
+
+                                <div class="row mt-3">
+                                    <div class="col">
+                                        <input type="email" class="form-control" placeholder="Correo Electrónico" aria-label="Ingresa el email" id="email" required>
+                                    </div>
+                                    <div class="col">
+                                        <input type="url" class="form-control" placeholder="Link del avatar" aria-label="Avatar URL" id="avatar" required>
+                                    </div>
+                                </div>
+
+                                <div class="row mt-3">
+                                    <div class="col text-center">
+                                        <button type="button" class="btn btn-outline-success" onclick="saveUser()">Guardar Usuario</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    `;
+    
+    // Inserta el modal en el elemento con id 'modalUser'
+    document.getElementById('modalUser').innerHTML = modalUser;
+    
+    // Crea una instancia del modal y lo muestra
+    const modal = new bootstrap.Modal(document.getElementById('showModalUser'));
+    modal.show();
+}
+
+function saveUser() {
+    const REQRES_ENDPOINT = 'https://reqres.in/api/users';
+    const form = document.getElementById('formAddUser');
+
+    // Verifica si el formulario es válido
+    if (form.checkValidity()) {
+        // Obtiene los valores del formulario
+        const first_name = document.getElementById('first_name').value;
+        const last_name = document.getElementById('last_name').value;
+        const email = document.getElementById('email').value;
+        const avatar = document.getElementById('avatar').value;
+
+        // Crea un objeto con los datos del usuario
+        const user = { first_name, last_name, email, avatar };
+
+        // Realiza una petición POST a la API
+        fetch(REQRES_ENDPOINT, {
+            method: 'POST',
+            headers: {
+                'Content-type': 'application/json',
+                'x-api-key': 'reqres-free-v1'  // Cabecera de autenticación
+            },
+            body: JSON.stringify(user)  // Envía los datos del usuario
+        })
+        .then((response) => {
+            // Procesa la respuesta convirtiéndola a JSON
+            return response.json().then(data => ({
+                status: response.status,
+                info: data
+            }));
+        })
+        .then((result) => {
+            // Muestra mensaje de éxito o error según el resultado
+            if (result.status === 201) {
+                document.getElementById('info').innerHTML = 
+                    '<h3>Usuario guardado exitosamente</h3>';
+            } else {
+                document.getElementById('info').innerHTML = 
+                    '<h3>No se encontró el usuario en la API</h3>';
+            }
+
+            // Cierra el modal después de guardar el usuario
+            const modalID = document.getElementById('showModalUser');
+            const modal = bootstrap.Modal.getInstance(modalID);
+            modal.hide();
+        })
+        .catch((error) => {
+            // Maneja errores en la petición
+            console.error('Error al guardar el usuario:', error);
+            document.getElementById('info').innerHTML = 
+                '<h3>Error al guardar el usuario. Intenta nuevamente.</h3>';
+        });
+    } else {
+        // Si el formulario no es válido, muestra un mensaje de error
+        form.reportValidity();
+    }
 }
